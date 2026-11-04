@@ -75,3 +75,46 @@ export const submitRating = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+// GET /api/ratings/my-ratings
+export const getMyRatings = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const ratings = await prisma.rating.findMany({
+      where: { userId },
+      include: {
+        store: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      totalRatings: ratings.length,
+      data: ratings,
+    });
+  } catch (error) {
+    console.error("Get my ratings error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch your ratings",
+    });
+  }
+};
