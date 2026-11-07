@@ -261,3 +261,79 @@ export const createStore = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getAllStores = async (req: Request, res: Response) => {
+  try {
+    const search = String(req.query.search || "").trim();
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search } },
+            { email: { contains: search } },
+            { address: { contains: search } },
+          ],
+        }
+      : {};
+
+    const [stores, totalStores] = await Promise.all([
+      prisma.store.findMany({
+        where,
+        include: {
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          ratings: {
+            select: { rating: true },
+          },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.store.count({ where }),
+    ]);
+
+    const data = stores.map((store) => {
+      const totalRatings = store.ratings.length;
+      const averageRating = totalRatings
+        ? store.ratings.reduce((sum, item) => sum + item.rating, 0) /
+          totalRatings
+        : 0;
+
+      return {
+        id: store.id,
+        name: store.name,
+        email: store.email,
+        address: store.address,
+        owner: store.owner,
+        averageRating: Number(averageRating.toFixed(1)),
+        totalRatings,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+      pagination: {
+        totalStores,
+        currentPage: page,
+        totalPages: Math.ceil(totalStores / limit),
+        limit,
+      },
+    });
+  } catch (error) {
+    console.error("Get admin stores error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch stores",
+    });
+  }
+};

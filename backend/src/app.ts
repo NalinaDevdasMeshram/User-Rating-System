@@ -24,8 +24,8 @@ app.use(
 
 // Test route
 app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/stores", storeRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/ratings", ratingRoutes);
 app.use("/api/owner", ownerRoutes);
 

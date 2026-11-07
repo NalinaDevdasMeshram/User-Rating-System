@@ -13,7 +13,6 @@ const MyRatings = () => {
         const response = await api.get<MyRatingsResponse>(
           "/ratings/my-ratings",
         );
-
         setRatings(response.data.data);
       } catch (err) {
         console.error(err);
